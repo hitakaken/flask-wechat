@@ -7,4 +7,4 @@ mod_wechat = Blueprint('wechat', __name__, url_prefix='/wechat', static_folder='
 
 @mod_wechat.route('/login')
 def login():
-    return render_template('auth/login.html', authorize_url_prefix=url_for('wechat.authorize', client=''))
+    return render_template('login.html', authorize_url_prefix=url_for('wechat.authorize', client=''))
