@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from flask import Blueprint, request, redirect, send_file, abort
 from wechat.client import WechatAPI
+from wechat.oauth2 import SCOPE_USERINFO
 import msgpack
 import qrcode
 import StringIO
@@ -11,11 +12,7 @@ mod_wechat = Blueprint('wechat', __name__)
 # 定义全局变量
 client = None
 url_for = None
-from flask import current_app as app
-client = WechatAPI(
-        appid=app.config['WX_APPID'],
-        secret=app.config['WX_SECRET']
-)
+
 
 @mod_wechat.record
 def init_mod(setup_state):
@@ -51,6 +48,7 @@ def first_request(*args, **kwargs):
 
 @mod_wechat.route('/qr')
 def qrcoder():
+    """生成二维码图片"""
     state = msgpack.packb(dict(request.args)).encode('base64', 'strict')
     url = url_for('wechat.authorize', state=state, _external=True)
     img = qrcode.make(url)
@@ -62,7 +60,11 @@ def qrcoder():
 
 @mod_wechat.route('/authz')
 def authorize():
-    return redirect(client.get_authorize_url(state=request.args['state']))
+    """跳转至微信授权链接"""
+    if 'info' in request.args:
+        print client.get_authorize_url(state=request.args['state'], scope=SCOPE_USERINFO)
+    print client.get_authorize_url(state=request.args['state'])
+    return abort(404)
 
 
 @mod_wechat.route('/cb')
