@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from flask import Blueprint, request, redirect, send_file
+from flask import Blueprint, request, redirect, send_file, abort
 from wechat.client import WechatAPI
+import msgpack
 import qrcode
-import pickle
 import StringIO
 
 # 初始化蓝图
@@ -11,12 +11,16 @@ mod_wechat = Blueprint('wechat', __name__)
 # 定义全局变量
 client = None
 url_for = None
-
+from flask import current_app as app
+client = WechatAPI(
+        appid=app.config['WX_APPID'],
+        secret=app.config['WX_SECRET']
+)
 
 @mod_wechat.record
-def get_url_for(setup_state):
+def init_mod(setup_state):
     """初始化超链接生成器和微信开发客户端"""
-    global wechat, url_for
+    global client, url_for
     app = setup_state.app
     if hasattr(app, 'url_for'):
         url_for = app.url_for
@@ -25,8 +29,6 @@ def get_url_for(setup_state):
         url_for = flask_url_for
     if 'WX_CALLBACK_URL' in app.config:
         redirect_uri = app.config['WX_CALLBACK_URL']
-    elif 'SERVER_NAME' in app.config:
-        redirect_uri = url_for('wechat.callback', _external=True)
     else:
         redirect_uri = None
 
@@ -39,16 +41,32 @@ def get_url_for(setup_state):
     setattr(mod_wechat, 'client',client)
 
 
-@mod_wechat.route('/qrcode')
-def qrcode():
-    state = pickle.dumps(request.args).encode('base64', 'strict')
-    img = qrcode.make(url_for('wechat.proxy', state=state))
-    img_io = StringIO()
-    img.save(img_io)
+@mod_wechat.before_app_first_request
+def first_request(*args, **kwargs):
+    """初次请求处理"""
+    # 如果没有定义回调地址，尝试增加回调地址
+    if client.defaults['redirect_uri'] is None:
+        client.defaults['redirect_uri'] = url_for('wechat.callback', _external=True)
+
+
+@mod_wechat.route('/qr')
+def qrcoder():
+    state = msgpack.packb(dict(request.args)).encode('base64', 'strict')
+    url = url_for('wechat.authorize', state=state, _external=True)
+    img = qrcode.make(url)
+    img_io = StringIO.StringIO()
+    img.save(img_io, format="JPEG")
+    img_io.seek(0)
     return send_file(img_io, mimetype='image/jpeg')
 
 
-@mod_wechat.route('/authorize')
-def proxy():
-    return redirect(wechat.get_authorize_url(state=request.args['state']))
+@mod_wechat.route('/authz')
+def authorize():
+    return redirect(client.get_authorize_url(state=request.args['state']))
+
+
+@mod_wechat.route('/cb')
+def callback():
+    if not client.is_authorized(request.args):
+        return abort(401)
 

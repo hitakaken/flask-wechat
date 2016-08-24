@@ -1,4 +1,5 @@
 flask
 PyWechatAPI
+msgpack-python
 qrcode
 pillow
