@@ -62,9 +62,8 @@ def qrcoder():
 def authorize():
     """跳转至微信授权链接"""
     if 'info' in request.args:
-        print client.get_authorize_url(state=request.args['state'], scope=SCOPE_USERINFO)
-    print client.get_authorize_url(state=request.args['state'])
-    return abort(404)
+        return client.get_authorize_url(state=request.args['state'], scope=SCOPE_USERINFO)
+    return client.get_authorize_url(state=request.args['state'])
 
 
 @mod_wechat.route('/cb')

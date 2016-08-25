@@ -91,3 +91,5 @@ ENV/
 
 .idea
 *.iml
+
+example/settings.py
