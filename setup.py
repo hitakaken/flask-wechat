@@ -14,8 +14,8 @@ install_requires = [
 ]
 
 setup(
-    name='flask-wechat',
-    version='0.0.3',
+    name='flask-wechat-auth',
+    version='0.0.1',
     description='WeChat Flask Blueprint Module',
     long_description=Readme,
     author='CaoKe',
