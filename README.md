@@ -1,12 +1,15 @@
 # flask-wechat
 微信公众号 Flask Blueprint模块
 
++ 通过扫描二维码登录第三方网站
+
 ## 安装
 ```bash
+$ pip install pillow
 $ pip install flask-wechat-auth
 ```
 
-## 使用
+## 启动服务
 
 新建`setting.py`
 
@@ -33,3 +36,7 @@ app.run()
 ```bash
 python run.py
 ```
+
+## 扫描登录
+
+(TODO)
