@@ -92,4 +92,4 @@ ENV/
 .idea
 *.iml
 
-example/settings.py
+/example/settings.py
