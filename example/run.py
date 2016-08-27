@@ -24,14 +24,14 @@ wechat = WeChat(app, url_prefix='/auth')
 @wechat.user_reject('login')
 def user_reject(ctx):
     state = ctx['state']
-    # 用户拒绝处理
+    # TODO 用户拒绝处理
     return abort(401)
 
 
 @wechat.user_accept('login')
 def user_accept(ctx):
     state = ctx['state']
-    # 根据状态判断是否可以直接返回
+    # TODO 根据状态判断是否可以直接返回
     return None, ctx
 
 
@@ -46,7 +46,7 @@ def is_user_info_required(ctx):
 @wechat.user_info('login')
 def handle_user_info(ctx):
     user_info = ctx['user_info']
-    # TODO 检查用户是否已经存在
+    # TODO 将用户存入数据库
     return ctx
 
 
