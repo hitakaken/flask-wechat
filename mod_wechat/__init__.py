@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from wechat.client import WechatAPI
 
 
 class WeChat(object):
@@ -15,13 +16,31 @@ class WeChat(object):
         self.success_callback = {}
         # 授权失败回调处理
         self.error_callback = {}
-
+        self.client = None
         if app is not None or len(kwargs) > 0:
             self.init_app(app, **kwargs)
 
     def init_app(self, app, **kwargs):
         from mod_wechat.controllers import mod_wechat as wechat_module
         setattr(wechat_module, 'wrapper', self)
+        if hasattr(app, 'url_for'):
+            wechat_module.url_for = app.url_for
+        else:
+            from flask import url_for as flask_url_for
+            wechat_module.url_for = flask_url_for
+        if 'WX_CALLBACK_URL' in app.config:
+            redirect_uri = app.config['WX_CALLBACK_URL']
+        else:
+            redirect_uri = None
+        client = WechatAPI(
+            appid=app.config['WX_APPID'],
+            secret=app.config['WX_SECRET'],
+            redirect_uri=redirect_uri
+        )
+        self.client = client
+        wechat_module.client = client
+        setattr(app, 'wechat', self)
+
         app.register_blueprint(wechat_module, **kwargs)
 
     def user_reject(self, workflow=None):

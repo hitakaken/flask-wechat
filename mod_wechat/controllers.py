@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Blueprint, request, redirect, send_file, abort
-from wechat.client import WechatAPI
+from flask import Blueprint, request, redirect, send_file, abort, current_app as app
 from wechat.oauth2 import SCOPE_USERINFO
 import msgpack
 import qrcode
@@ -10,34 +9,8 @@ import StringIO
 mod_wechat = Blueprint('wechat', __name__)
 
 # 定义全局变量
-module = None
 client = None
 url_for = None
-
-
-@mod_wechat.record
-def init_mod(setup_state):
-    """初始化超链接生成器和微信开发客户端"""
-    global client, url_for, module
-    app = setup_state.app
-    if hasattr(app, 'url_for'):
-        url_for = app.url_for
-    else:
-        from flask import url_for as flask_url_for
-        url_for = flask_url_for
-    if 'WX_CALLBACK_URL' in app.config:
-        redirect_uri = app.config['WX_CALLBACK_URL']
-    else:
-        redirect_uri = None
-
-    client = WechatAPI(
-        appid=app.config['WX_APPID'],
-        secret=app.config['WX_SECRET'],
-        redirect_uri=redirect_uri
-    )
-    module = mod_wechat.wrapper
-    setattr(app, 'wechat_client', client)
-    setattr(mod_wechat, 'client', client)
 
 
 @mod_wechat.before_app_first_request
@@ -105,7 +78,7 @@ def callback():
     print workflow
     # 判断用户是否授权
     if not client.is_authorized(request.args):
-        reject_handler = module.user_reject_callback.get(workflow)
+        reject_handler = app.wechat.user_reject_callback.get(workflow)
         if reject_handler is not None:
             return reject_handler(state)
         return abort(401)
@@ -113,7 +86,7 @@ def callback():
     context = {'state': state}
     try:
         # 用户授权操作
-        accept_handler = module.user_accept_callback.get(workflow)
+        accept_handler = app.wechat.user_accept_callback.get(workflow)
         if accept_handler is not None:
             resp, context = accept_handler(context)
             if resp is not None:
@@ -128,7 +101,7 @@ def callback():
         openid = token['openid']
         scope = token['scope']
         # 判断是否需要获取用户信息授权
-        is_user_info_required_handler = module.is_user_info_required_callback.get(workflow)
+        is_user_info_required_handler = app.wechat.is_user_info_required_callback.get(workflow)
         if is_user_info_required_handler is not None:
             required, context = is_user_info_required_handler(context)
             print required
@@ -138,19 +111,19 @@ def callback():
                     # 是：获取并处理用户信息
                     user_info = client.get_user_info(access_token=access_token, openid=openid)
                     context['user_info'] = user_info
-                    user_info_handler = module.user_info_callback.get(workflow)
+                    user_info_handler = app.wechat.user_info_callback.get(workflow)
                     if user_info_handler is not None:
                         context = user_info_handler(context)
                 else:
                     # 否：重定向重新获取授权
                     return redirect(client.get_authorize_url(state=request.args['state'], scope=SCOPE_USERINFO))
-        success_handler = module.success_callback.get(workflow)
+        success_handler = app.wechat.success_callback.get(workflow)
         if success_handler is not None:
             return success_handler(context)
         else:
             return redirect(url_for('index'))
     except Exception, err:
-        error_handler = module.error_callback.get(workflow)
+        error_handler = app.wechat.error_callback.get(workflow)
         if error_handler is not None:
             return error_handler(err, context)
         else:
