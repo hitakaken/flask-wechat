@@ -32,13 +32,12 @@ class WeChat(object):
             redirect_uri = app.config['WX_CALLBACK_URL']
         else:
             redirect_uri = None
-        client = WechatAPI(
+        self.client = WechatAPI(
             appid=app.config['WX_APPID'],
             secret=app.config['WX_SECRET'],
             redirect_uri=redirect_uri
         )
-        self.client = client
-        wechat_module.client = client
+        wechat_module.client = self.client
         setattr(app, 'wechat', self)
 
         app.register_blueprint(wechat_module, **kwargs)

@@ -9,17 +9,15 @@ import StringIO
 mod_wechat = Blueprint('wechat', __name__)
 
 # 定义全局变量
-client = None
 url_for = None
 
 
 @mod_wechat.before_app_first_request
 def first_request(*args, **kwargs):
     """初次请求处理"""
-    global client
-    # 如果没有定义回调地址，尝试增加回调地址
-    if client.defaults['redirect_uri'] is None:
-        client.defaults['redirect_uri'] = url_for('wechat.callback', _external=True)
+    # 如果没有定义回调地址，尝试增加回调地址    
+    if app.wechat.client.defaults['redirect_uri'] is None:
+        app.wechat.client.defaults['redirect_uri'] = url_for('wechat.callback', _external=True)
 
 
 def qrcoder(state, userinfo=False):
@@ -62,9 +60,9 @@ def authorize():
     else:
         state = msgpack.packb(request.args.to_dict()).encode('base64', 'strict')
     if 'info' in request.args:
-        url = client.get_authorize_url(state=state, scope=SCOPE_USERINFO)
+        url = app.wechat.client.get_authorize_url(state=state, scope=SCOPE_USERINFO)
     else:
-        url=client.get_authorize_url(state=state)
+        url = app.wechat.client.get_authorize_url(state=state)
     print url
     return redirect(url)
 
@@ -78,7 +76,7 @@ def callback():
     workflow = state['wf'] if 'wf' in state else None
     print workflow
     # 判断用户是否授权
-    if not client.is_authorized(request.args):
+    if not app.wechat.client.is_authorized(request.args):
         reject_handler = app.wechat.user_reject_callback.get(workflow)
         if reject_handler is not None:
             return reject_handler(state)
@@ -93,7 +91,7 @@ def callback():
             if resp is not None:
                 return resp
         # 获取授权令牌
-        token = client.exchange_code(code=code)
+        token = app.wechat.client.exchange_code(code=code)
         context['token'] = token
         access_token = token['access_token']
         # 忽略：
@@ -110,14 +108,14 @@ def callback():
                 # 是否具有获取用户信息授权
                 if scope == SCOPE_USERINFO:
                     # 是：获取并处理用户信息
-                    user_info = client.get_user_info(access_token=access_token, openid=openid)
+                    user_info = app.wechat.client.get_user_info(access_token=access_token, openid=openid)
                     context['user_info'] = user_info
                     user_info_handler = app.wechat.user_info_callback.get(workflow)
                     if user_info_handler is not None:
                         context = user_info_handler(context)
                 else:
                     # 否：重定向重新获取授权
-                    return redirect(client.get_authorize_url(state=request.args['state'], scope=SCOPE_USERINFO))
+                    return redirect(app.wechat.client.get_authorize_url(state=request.args['state'], scope=SCOPE_USERINFO))
         success_handler = app.wechat.success_callback.get(workflow)
         if success_handler is not None:
             return success_handler(context)
