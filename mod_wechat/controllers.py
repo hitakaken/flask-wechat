@@ -43,6 +43,7 @@ def init_mod(setup_state):
 @mod_wechat.before_app_first_request
 def first_request(*args, **kwargs):
     """初次请求处理"""
+    global client
     # 如果没有定义回调地址，尝试增加回调地址
     if client.defaults['redirect_uri'] is None:
         client.defaults['redirect_uri'] = url_for('wechat.callback', _external=True)
