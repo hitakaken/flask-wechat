@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Blueprint, request, redirect, send_file, abort, url_for, current_app as app
+from flask import Blueprint, request, redirect, send_file, abort, current_app as app
 from wechat.oauth2 import SCOPE_USERINFO
 import msgpack
 import qrcode
@@ -8,16 +8,13 @@ import StringIO
 # 初始化蓝图
 mod_wechat = Blueprint('wechat', __name__)
 
-# 定义全局变量
-url_for = None
-
 
 @mod_wechat.before_app_first_request
 def first_request(*args, **kwargs):
     """初次请求处理"""
     # 如果没有定义回调地址，尝试增加回调地址    
     if app.wechat.client.defaults['redirect_uri'] is None:
-        app.wechat.client.defaults['redirect_uri'] = url_for('wechat.callback', _external=True)
+        app.wechat.client.defaults['redirect_uri'] = app.url_for('wechat.callback', _external=True)
 
 
 def qrcoder(state, userinfo=False):
@@ -25,9 +22,9 @@ def qrcoder(state, userinfo=False):
     # 使用msgpack压缩请求参数
     state = msgpack.packb(state.to_dict()).encode('base64', 'strict')
     if userinfo:
-        url = url_for('wechat.authorize', state=state, info='', _external=True)
+        url = app.url_for('wechat.authorize', state=state, info='', _external=True)
     else:
-        url = url_for('wechat.authorize', state=state, _external=True)
+        url = app.url_for('wechat.authorize', state=state, _external=True)
     print url
     img = qrcode.make(url)
     img_io = StringIO.StringIO()
@@ -120,7 +117,7 @@ def callback():
         if success_handler is not None:
             return success_handler(context)
         else:
-            return redirect(url_for('index'))
+            return redirect(app.url_for('index'))
     except Exception, err:
         error_handler = app.wechat.error_callback.get(workflow)
         if error_handler is not None:
