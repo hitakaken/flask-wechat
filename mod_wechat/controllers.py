@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Blueprint, request, redirect, send_file, abort, current_app as app
+from flask import Blueprint, request, redirect, send_file, abort, url_for, current_app as app
 from wechat.oauth2 import SCOPE_USERINFO
 import msgpack
 import qrcode
@@ -7,9 +7,6 @@ import StringIO
 
 # 初始化蓝图
 mod_wechat = Blueprint('wechat', __name__)
-
-# 定义全局变量
-url_for = None
 
 
 @mod_wechat.before_app_first_request
