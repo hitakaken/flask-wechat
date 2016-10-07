@@ -21,13 +21,14 @@ class WeChat(object):
             self.init_app(app, **kwargs)
 
     def init_app(self, app, **kwargs):
+        import mod_wechat.controllers
         from mod_wechat.controllers import mod_wechat as wechat_module
         setattr(wechat_module, 'wrapper', self)
         if hasattr(app, 'url_for'):
-            wechat_module.url_for = app.url_for
+            mod_wechat.controllers.url_for = app.url_for
         else:
             from flask import url_for as flask_url_for
-            wechat_module.url_for = flask_url_for
+            mod_wechat.controllers.url_for = flask_url_for
         if 'WX_CALLBACK_URL' in app.config:
             redirect_uri = app.config['WX_CALLBACK_URL']
         else:

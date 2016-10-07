@@ -8,6 +8,9 @@ import StringIO
 # 初始化蓝图
 mod_wechat = Blueprint('wechat', __name__)
 
+# 定义全局变量
+url_for = None
+
 
 @mod_wechat.before_app_first_request
 def first_request(*args, **kwargs):
